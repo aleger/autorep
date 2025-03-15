@@ -12,6 +12,8 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.0",
+    "@heroicons/react": "^2.2.0",
     "@neondatabase/serverless": "^0.10.4",
     "@prisma/client": "^6.5.0",
     "@sparticuz/chromium-min": "^133.0.0",
