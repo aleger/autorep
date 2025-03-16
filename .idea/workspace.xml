@@ -5,8 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a52ec211-5dcb-4af5-803b-a8d612ea7ee0" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/app/components/Hero.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/components/Nav.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/layout.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/page.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -18,6 +19,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="TypeScript File" />
+        <option value="TypeScript JSX File" />
       </list>
     </option>
   </component>
@@ -38,6 +40,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "dev",
+    "last_opened_file_path": "/Users/aleger/Documents/sandbox/autorep/app/components",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -50,6 +53,9 @@
   }
 }]]></component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/app/components" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/app/api/scraper" />
       <recent name="$PROJECT_DIR$" />
@@ -73,7 +79,7 @@
       <workItem from="1741824670827" duration="2296000" />
       <workItem from="1741957276135" duration="12000" />
       <workItem from="1741957300574" duration="3085000" />
-      <workItem from="1741977458223" duration="30703000" />
+      <workItem from="1741977458223" duration="38835000" />
     </task>
     <servers />
   </component>
