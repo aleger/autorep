@@ -4,6 +4,22 @@ import { useState, FormEvent } from "react";
 import Nav from "@/app/components/Nav";
 import Hero from "@/app/components/Hero";
 
+interface APIMember {
+  name: string;
+  partyName?: string;
+  bioguideId?: string;
+  terms?: {
+    item?: {
+      endYear?: number;
+      startYear?: number;
+    }[];
+  };
+}
+
+interface CongressAPIResponse {
+  members?: APIMember[];
+}
+
 type Representative = {
   name: string;
   party?: string;
@@ -92,20 +108,20 @@ function MultiStepForm() {
       if (!res.ok) {
         throw new Error("Failed to fetch representatives");
       }
-      const data = await res.json();
+      const data = (await res.json()) as CongressAPIResponse;
 
       // Filter out members who are no longer in office
       const currentYear = new Date().getFullYear();
-      const repsInOffice = (data.members || []).filter((m: any) => {
+      const repsInOffice = (data.members || []).filter((m: APIMember) => {
         const termItems = m?.terms?.item || [];
         // Keep if any term is ongoing
-        return termItems.some((term: any) => {
+        return termItems.some((term) => {
           return !term.endYear || term.endYear >= currentYear;
         });
       });
 
       // Map relevant fields
-      const newReps: Representative[] = repsInOffice.map((m: any) => ({
+      const newReps: Representative[] = repsInOffice.map((m: APIMember) => ({
         name: m.name, // e.g. "Fischer, Deb"
         party: m.partyName, // e.g. "Republican"
         memberId: m.bioguideId,
@@ -113,8 +129,12 @@ function MultiStepForm() {
 
       setRepresentatives(newReps);
       setSelectedReps([]);
-    } catch (error: any) {
-      alert(error.message || "Could not fetch reps.");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("Could not fetch reps.");
+      }
     } finally {
       setIsFetching(false);
     }
@@ -154,17 +174,16 @@ function MultiStepForm() {
     const userName = name || "[Your Name]";
     const customMsg = personalizedMessage || "";
 
-    // Example subject for "Pancreatic Cancer Awareness" template:
-    let finalSubject = subject || "Pancreatic Cancer Awareness Request";
+    // Use const for ESLint's prefer-const rule
+    const finalSubject = subject || "Pancreatic Cancer Awareness Request";
 
-    // Construct the body with placeholders replaced:
-    let finalBody = `
+    const finalBody = `
 Dear ${repName},
 
 As a resident of ${stateLabel} and a constituent, I want to welcome you back to Congress and remind you why your support
 of lifesaving pancreatic cancer research is critical.
 
-According to both the CDC and NIH the rate of pancreatic cancer in ${stateLabel} is rising. 
+According to both the CDC and NIH the rate of pancreatic cancer in ${stateLabel} is rising.
 
 Pancreatic cancer is the only major cancer with a five-year survival rate below 20%. Over the last two decades,
 research investments by Congress have increased the survival trend from a mere 4%. However, the ACS recently
@@ -189,11 +208,9 @@ ${userName}
   };
 
   // SUBMIT MESSAGE (Step 3 -> Step 4)
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Example: subject is optional only if template is blank. But if user chooses
-    // PanCAN template, we can have a default subject.
-    // We'll just show a basic check:
+
     if (!selectedReps.length) {
       alert("No representatives selected.");
       return;
@@ -201,17 +218,15 @@ ${userName}
 
     try {
       // Build the final message from the template (if any):
-      let finalMessage = "";
+      /*      let finalMessage = "";
       if (template === "pancan") {
-        // Use the dynamic preview text as the final message
         finalMessage = buildTemplatePreview();
       } else {
-        // If no template selected, just use "subject" + "personalizedMessage"
         finalMessage = `Subject: ${subject}\n\n${personalizedMessage}`;
-      }
+      }*/
 
-      // A real app might loop over selectedReps and call an API for each
-      // or send them all at once. We'll do a single example call.
+      // Removed unused submissionPayload to fix ESLint no-unused-vars
+      /*
       const submissionPayload = {
         name,
         email,
@@ -225,8 +240,9 @@ ${userName}
         finalMessage,
         representatives: selectedReps,
       };
+      */
 
-      // e.g. call your endpoint:
+      // Example: call your endpoint
       // const resp = await fetch("/api/submit", {
       //   method: "POST",
       //   headers: { "Content-Type": "application/json" },
@@ -458,7 +474,6 @@ ${userName}
               value={template}
               onChange={(e) => {
                 setTemplate(e.target.value);
-                // If user picks PanCAN, we can set a default subject
                 if (e.target.value === "pancan") {
                   setSubject("Pancreatic Cancer Awareness Request");
                 } else {
