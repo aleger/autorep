@@ -241,12 +241,17 @@ function MultiStepForm() {
       setIsFetching(true);
       setFetchError("");
       const res = await fetch(`/api/reps?state=${stateAbbr.toUpperCase()}`);
-      const payload = (await res.json()) as
-        | CongressAPIResponse
-        | { error?: string };
+      const payload = (await res.json()) as unknown;
 
       if (!res.ok) {
-        throw new Error(payload?.error || "Failed to fetch representatives. Try again.");
+        const errorMessage =
+          typeof payload === "object" &&
+          payload !== null &&
+          "error" in payload &&
+          typeof payload.error === "string"
+            ? payload.error
+            : "Failed to fetch representatives. Try again.";
+        throw new Error(errorMessage);
       }
 
       const data = payload as CongressAPIResponse;
