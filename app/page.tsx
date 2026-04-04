@@ -4,6 +4,59 @@ import { useState, FormEvent } from "react";
 import Nav from "@/app/components/Nav";
 import Hero from "@/app/components/Hero";
 
+const US_STATES = [
+  { abbr: "AL", name: "Alabama" },
+  { abbr: "AK", name: "Alaska" },
+  { abbr: "AZ", name: "Arizona" },
+  { abbr: "AR", name: "Arkansas" },
+  { abbr: "CA", name: "California" },
+  { abbr: "CO", name: "Colorado" },
+  { abbr: "CT", name: "Connecticut" },
+  { abbr: "DE", name: "Delaware" },
+  { abbr: "FL", name: "Florida" },
+  { abbr: "GA", name: "Georgia" },
+  { abbr: "HI", name: "Hawaii" },
+  { abbr: "ID", name: "Idaho" },
+  { abbr: "IL", name: "Illinois" },
+  { abbr: "IN", name: "Indiana" },
+  { abbr: "IA", name: "Iowa" },
+  { abbr: "KS", name: "Kansas" },
+  { abbr: "KY", name: "Kentucky" },
+  { abbr: "LA", name: "Louisiana" },
+  { abbr: "ME", name: "Maine" },
+  { abbr: "MD", name: "Maryland" },
+  { abbr: "MA", name: "Massachusetts" },
+  { abbr: "MI", name: "Michigan" },
+  { abbr: "MN", name: "Minnesota" },
+  { abbr: "MS", name: "Mississippi" },
+  { abbr: "MO", name: "Missouri" },
+  { abbr: "MT", name: "Montana" },
+  { abbr: "NE", name: "Nebraska" },
+  { abbr: "NV", name: "Nevada" },
+  { abbr: "NH", name: "New Hampshire" },
+  { abbr: "NJ", name: "New Jersey" },
+  { abbr: "NM", name: "New Mexico" },
+  { abbr: "NY", name: "New York" },
+  { abbr: "NC", name: "North Carolina" },
+  { abbr: "ND", name: "North Dakota" },
+  { abbr: "OH", name: "Ohio" },
+  { abbr: "OK", name: "Oklahoma" },
+  { abbr: "OR", name: "Oregon" },
+  { abbr: "PA", name: "Pennsylvania" },
+  { abbr: "RI", name: "Rhode Island" },
+  { abbr: "SC", name: "South Carolina" },
+  { abbr: "SD", name: "South Dakota" },
+  { abbr: "TN", name: "Tennessee" },
+  { abbr: "TX", name: "Texas" },
+  { abbr: "UT", name: "Utah" },
+  { abbr: "VT", name: "Vermont" },
+  { abbr: "VA", name: "Virginia" },
+  { abbr: "WA", name: "Washington" },
+  { abbr: "WV", name: "West Virginia" },
+  { abbr: "WI", name: "Wisconsin" },
+  { abbr: "WY", name: "Wyoming" },
+];
+
 interface APIMember {
   name: string;
   partyName?: string;
@@ -23,15 +76,38 @@ interface CongressAPIResponse {
 type Representative = {
   name: string;
   party?: string;
-  memberId?: string; // from the congress API
+  memberId?: string;
 };
+
+type FormErrors = {
+  name?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  stateAbbr?: string;
+  zip?: string;
+};
+
+const STEPS = [
+  { number: 1, label: "Your Info" },
+  { number: 2, label: "Your Reps" },
+  { number: 3, label: "Message" },
+  { number: 4, label: "Complete" },
+];
+
+function normalizeName(invertedName: string): string {
+  if (invertedName.includes(",")) {
+    const [last, first] = invertedName.split(",").map((s) => s.trim());
+    return `${first} ${last}`;
+  }
+  return invertedName;
+}
 
 export default function Home() {
   return (
     <div className="bg-white">
       <Nav />
       <Hero />
-      {/* MULTI-STEP FORM SECTION */}
       <section
         id="multi-step-form"
         className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8 pb-48"
@@ -42,105 +118,168 @@ export default function Home() {
   );
 }
 
+function StepIndicator({ currentStep }: { currentStep: number }) {
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between">
+        {STEPS.map((s, i) => (
+          <div key={s.number} className="flex items-center flex-1 last:flex-none">
+            <div className="flex flex-col items-center">
+              <div
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
+                  currentStep > s.number
+                    ? "bg-indigo-600 text-white"
+                    : currentStep === s.number
+                      ? "bg-indigo-600 text-white ring-4 ring-indigo-100"
+                      : "bg-gray-200 text-gray-500"
+                }`}
+              >
+                {currentStep > s.number ? (
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                ) : (
+                  s.number
+                )}
+              </div>
+              <span
+                className={`mt-1 text-xs font-medium ${
+                  currentStep >= s.number ? "text-indigo-600" : "text-gray-400"
+                }`}
+              >
+                {s.label}
+              </span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div className="mx-2 h-0.5 flex-1 mb-5">
+                <div
+                  className={`h-full transition-colors ${
+                    currentStep > s.number ? "bg-indigo-600" : "bg-gray-200"
+                  }`}
+                />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MultiStepForm() {
   const [step, setStep] = useState(1);
 
-  // Basic constituent info (Step 1)
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
-  const [stateAbbr, setStateAbbr] = useState(""); // e.g. "NE"
+  const [stateAbbr, setStateAbbr] = useState("");
   const [zip, setZip] = useState("");
+  const [errors, setErrors] = useState<FormErrors>({});
 
-  // Reps (Step 2)
   const [representatives, setRepresentatives] = useState<Representative[]>([]);
   const [selectedReps, setSelectedReps] = useState<Representative[]>([]);
   const [isFetching, setIsFetching] = useState(false);
+  const [fetchError, setFetchError] = useState("");
 
-  // Step 3 new fields
-  const [template, setTemplate] = useState(""); // e.g. "pancan"
+  const [template, setTemplate] = useState("");
   const [subject, setSubject] = useState("");
-  const [personalizedMessage, setPersonalizedMessage] = useState(""); // optional
+  const [personalizedMessage, setPersonalizedMessage] = useState("");
 
-  // Submission results (Step 4)
   const [submissionStatus, setSubmissionStatus] = useState<{
     success: boolean;
     details: string;
   } | null>(null);
 
-  // STEP NAVIGATION
-  const handleNext = () => {
-    if (step === 1) {
-      // Basic validation
-      if (!name || !email || !address || !city || !stateAbbr || !zip) {
-        alert("Please fill out all required fields.");
-        return;
-      }
+  // Validation
+  const validateStep1 = (): boolean => {
+    const newErrors: FormErrors = {};
+    if (!name.trim()) newErrors.name = "Name is required.";
+    if (!email.trim()) {
+      newErrors.email = "Email is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Enter a valid email address.";
     }
+    if (!address.trim()) newErrors.address = "Address is required.";
+    if (!city.trim()) newErrors.city = "City is required.";
+    if (!stateAbbr) newErrors.stateAbbr = "State is required.";
+    if (!zip.trim()) {
+      newErrors.zip = "Zip is required.";
+    } else if (!/^\d{5}(-\d{4})?$/.test(zip)) {
+      newErrors.zip = "Enter a valid 5-digit zip code.";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (step === 1 && !validateStep1()) return;
     if (step === 2 && selectedReps.length === 0) {
-      alert("Please select at least one representative to contact.");
+      setFetchError("Select at least one representative to continue.");
       return;
     }
+    setFetchError("");
     setStep(step + 1);
   };
 
   const handleBack = () => {
     setSubmissionStatus(null);
+    setFetchError("");
     setStep(step - 1);
   };
 
-  // FETCH REPS (Step 2)
   const handleFetchReps = async () => {
     if (!stateAbbr || !zip) {
-      alert("State and Zip are required to look up representatives.");
+      setFetchError("State and Zip are required to look up representatives.");
       return;
     }
     try {
       setIsFetching(true);
-      const API_KEY = process.env.NEXT_PUBLIC_CONGRESS_API_KEY;
-      if (!API_KEY) {
-        throw new Error("API Key is missing or not set");
-      }
+      setFetchError("");
+      const res = await fetch(`/api/reps?state=${stateAbbr.toUpperCase()}`);
+      const payload = (await res.json()) as
+        | CongressAPIResponse
+        | { error?: string };
 
-      const url = `https://api.congress.gov/v3/member/${stateAbbr.toUpperCase()}?api_key=${API_KEY}`;
-      const res = await fetch(url);
       if (!res.ok) {
-        throw new Error("Failed to fetch representatives");
+        throw new Error(payload?.error || "Failed to fetch representatives. Try again.");
       }
-      const data = (await res.json()) as CongressAPIResponse;
 
-      // Filter out members who are no longer in office
+      const data = payload as CongressAPIResponse;
+
       const currentYear = new Date().getFullYear();
       const repsInOffice = (data.members || []).filter((m: APIMember) => {
         const termItems = m?.terms?.item || [];
-        // Keep if any term is ongoing
-        return termItems.some((term) => {
-          return !term.endYear || term.endYear >= currentYear;
-        });
+        return termItems.some((term) => !term.endYear || term.endYear >= currentYear);
       });
 
-      // Map relevant fields
       const newReps: Representative[] = repsInOffice.map((m: APIMember) => ({
-        name: m.name, // e.g. "Fischer, Deb"
-        party: m.partyName, // e.g. "Republican"
+        name: m.name,
+        party: m.partyName,
         memberId: m.bioguideId,
       }));
+
+      if (newReps.length === 0) {
+        setFetchError("No active representatives found for this state.");
+      }
 
       setRepresentatives(newReps);
       setSelectedReps([]);
     } catch (error: unknown) {
       if (error instanceof Error) {
-        alert(error.message);
+        setFetchError(error.message);
       } else {
-        alert("Could not fetch reps.");
+        setFetchError("Could not fetch representatives.");
       }
     } finally {
       setIsFetching(false);
     }
   };
 
-  // TOGGLE REP SELECT
   const handleToggleRep = (rep: Representative) => {
     const exists = selectedReps.find((r) => r.memberId === rep.memberId);
     if (exists) {
@@ -148,85 +287,91 @@ function MultiStepForm() {
     } else {
       setSelectedReps([...selectedReps, rep]);
     }
+    setFetchError("");
   };
 
-  // BUILD TEMPLATE PREVIEW
-  // If the user selects "pancan," we fill in placeholders. For the preview, we’ll
-  // just show the first selected rep’s name (if any) or fallback to "[Rep. Name]".
   const buildTemplatePreview = () => {
-    if (template !== "pancan") return "";
-
-    function normalizeName(invertedName: string): string {
-      // if the name contains a comma, assume the format "LastName, FirstName"
-      if (invertedName.includes(",")) {
-        const [last, first] = invertedName.split(",").map((s) => s.trim());
-        return `${first} ${last}`; // "Deb Fischer"
-      }
-      // otherwise, just return what we have
-      return invertedName;
-    }
-
     const repName =
       selectedReps.length > 0
         ? normalizeName(selectedReps[0].name)
         : "[Rep. Name]";
     const stateLabel = stateAbbr || "[state]";
     const userName = name || "[Your Name]";
-    const customMsg = personalizedMessage || "";
+    const customMsg = personalizedMessage || "[Personalized message from constituent]";
 
-    // Use const for ESLint's prefer-const rule
-    const finalSubject = subject || "Pancreatic Cancer Awareness Request";
+    if (template === "pancan") {
+      const finalSubject = subject || "Pancreatic Cancer Awareness Request";
+      const finalBody = `Dear ${repName},
 
-    const finalBody = `
-Dear ${repName},
-
-As a resident of ${stateLabel} and a constituent, I want to welcome you back to Congress and remind you why your support
-of lifesaving pancreatic cancer research is critical.
+As a resident of ${stateLabel} and a constituent, I want to welcome you back to Congress and remind you why your support of lifesaving pancreatic cancer research is critical.
 
 According to both the CDC and NIH the rate of pancreatic cancer in ${stateLabel} is rising.
 
-Pancreatic cancer is the only major cancer with a five-year survival rate below 20%. Over the last two decades,
-research investments by Congress have increased the survival trend from a mere 4%. However, the ACS recently
-announced that for the first time in three years, the survival rate for pancreatic cancer remains flat at just 13%.
-Furthermore, pancreatic cancer remains on course to become the second leading cause of cancer death by 2030.
-Due to the nature of the pancreas’s location and current testing methods, patients are often diagnosed too late.
-The only way to change this is by providing predictable and robust research funding.
+Pancreatic cancer is the only major cancer with a five-year survival rate below 20%. Over the last two decades, research investments by Congress have increased the survival trend from a mere 4%. However, the ACS recently announced that for the first time in three years, the survival rate for pancreatic cancer remains flat at just 13%. Furthermore, pancreatic cancer remains on course to become the second leading cause of cancer death by 2030. Due to the nature of the pancreas's location and current testing methods, patients are often diagnosed too late. The only way to change this is by providing predictable and robust research funding.
 
-This is why I’m asking you to work to pass a fiscal year 2025 spending package in a bi-partisan manner that increases
-funding for pancreatic cancer research by 30%.
+This is why I'm asking you to work to pass a fiscal year 2025 spending package in a bi-partisan manner that increases funding for pancreatic cancer research by 30%.
 
-${customMsg ? customMsg : "[Personalized message from constituent]"}
+${customMsg}
 
 More than 80% of Pancreatic cancer research funding comes from the federal government. I ask for your support on behalf of everyone fighting pancreatic cancer today and those who will face it in the future.
 
 Thank you for your consideration.
 
-${userName}
-`.trim();
+${userName}`;
 
-    return `Subject: ${finalSubject}\n\n${finalBody}`;
+      return `Subject: ${finalSubject}\n\n${finalBody}`;
+    }
+
+    if (template === "native-education") {
+      const finalSubject = subject || "The Issue of Native American Education";
+      const finalBody = `Dear ${repName},
+
+As a resident of ${stateLabel} and a constituent, I want to tell you about an issue that has come to my attention.
+
+According to the National Center for Education Statistics, the total college enrollment rate for Native American students was just 24%. This is the lowest among all racial and ethnic groups.
+
+As you know, Native Americans have overcome many historical hurdles when it comes to obtaining education. Such strong and resilient people deserve the same access to education as everyone else.
+
+This is part of a larger systemic issue spanning across this country's history, and changes need to be made on multiple fronts. In 2023, Colorado Public Radio reported that there is a difference of $8,814 in per-pupil funding between tribal and off-reservation schools. Similarly, native women only earn 58.3 cents compared to a white man's dollar, according to the Institute for Women's Policy Research.
+
+These barriers affect native students, native leaders, native communities, and everyone else. It is important to me that Native Americans receive representation, equity, and access. The first people living in our country should not be the last ones thought of.
+
+I cannot stress enough how important supporting native citizens throughout their lives and not just at the collegiate level is. Government plays a crucial role in opening the doors to higher education.
+
+${customMsg}
+
+Government plays a crucial role in opening the doors to higher education. Last year, the Trump administration increased investment in a one-time allocation for Tribal Colleges and Universities.
+
+But long-lasting problems deserve foundational solutions. I ask for your support on behalf of everyone affected today and those who will face this problem in the future.
+
+I'm informing you of this problem as I want to see it improved, whether that be at the national level or within our local government.
+
+Thank you for your consideration.
+
+${userName}`;
+
+      return `Subject: ${finalSubject}\n\n${finalBody}`;
+    }
+
+    return "";
   };
 
-  // SUBMIT MESSAGE (Step 3 -> Step 4)
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!selectedReps.length) {
-      alert("No representatives selected.");
+      setFetchError("No representatives selected.");
       return;
     }
 
     try {
-      // Build the final message from the template (if any):
-      /*      let finalMessage = "";
-      if (template === "pancan") {
+      let finalMessage = "";
+      if (template === "pancan" || template === "native-education") {
         finalMessage = buildTemplatePreview();
       } else {
         finalMessage = `Subject: ${subject}\n\n${personalizedMessage}`;
-      }*/
+      }
 
-      // Removed unused submissionPayload to fix ESLint no-unused-vars
-      /*
       const submissionPayload = {
         name,
         email,
@@ -240,15 +385,9 @@ ${userName}
         finalMessage,
         representatives: selectedReps,
       };
-      */
 
-      // Example: call your endpoint
-      // const resp = await fetch("/api/submit", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(submissionPayload),
-      // });
-      // if (!resp.ok) throw new Error("Submission failed");
+      // TODO: POST to /api/submit when backend is ready
+      console.log("Submission payload:", submissionPayload);
 
       setSubmissionStatus({
         success: true,
@@ -259,196 +398,167 @@ ${userName}
       console.error(err);
       setSubmissionStatus({
         success: false,
-        details:
-          "Something went wrong while submitting. Please try again later.",
+        details: "Something went wrong while submitting. Please try again later.",
       });
     }
   };
 
-  // RENDER
-  return (
-    <div className="rounded-lg bg-gray-50 p-6 shadow-sm">
-      {/* STEP INDICATORS */}
-      <div className="flex items-center justify-between pb-4">
-        <div>
-          <span
-            className={`mr-2 font-semibold ${
-              step >= 1 ? "text-indigo-600" : "text-gray-400"
-            }`}
-          >
-            Step 1
-          </span>
-          <span
-            className={`mr-2 font-semibold ${
-              step >= 2 ? "text-indigo-600" : "text-gray-400"
-            }`}
-          >
-            Step 2
-          </span>
-          <span
-            className={`mr-2 font-semibold ${
-              step >= 3 ? "text-indigo-600" : "text-gray-400"
-            }`}
-          >
-            Step 3
-          </span>
-          <span
-            className={`mr-2 font-semibold ${
-              step >= 4 ? "text-indigo-600" : "text-gray-400"
-            }`}
-          >
-            Complete
-          </span>
-        </div>
-        <div className="text-sm text-gray-500">Multi-part Form</div>
-      </div>
+  const resetForm = () => {
+    setStep(1);
+    setSubmissionStatus(null);
+    setName("");
+    setEmail("");
+    setAddress("");
+    setCity("");
+    setStateAbbr("");
+    setZip("");
+    setErrors({});
+    setRepresentatives([]);
+    setSelectedReps([]);
+    setTemplate("");
+    setSubject("");
+    setPersonalizedMessage("");
+    setFetchError("");
+  };
 
-      {/* STEP 1 */}
+  const inputClass = (hasError: boolean) =>
+    `mt-1 w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-colors ${
+      hasError ? "border-red-400 bg-red-50" : "border-gray-300"
+    }`;
+
+  return (
+    <div className="rounded-xl bg-gray-50 p-6 shadow-sm ring-1 ring-gray-200">
+      <StepIndicator currentStep={step} />
+
+      {/* STEP 1: Contact Info */}
       {step === 1 && (
-        <div className="space-y-6">
+        <div className="space-y-5">
           <p className="text-base text-gray-600">
-            Please provide your contact information below.
+            Enter your contact information to get started.
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Name*
+                Name
               </label>
               <input
                 type="text"
-                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                className={inputClass(!!errors.name)}
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (errors.name) setErrors({ ...errors, name: undefined });
+                }}
+                placeholder="Jane Doe"
               />
+              {errors.name && (
+                <p className="mt-1 text-xs text-red-600">{errors.name}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Email*
+                Email
               </label>
               <input
                 type="email"
-                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                className={inputClass(!!errors.email)}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors({ ...errors, email: undefined });
+                }}
+                placeholder="jane@example.com"
               />
+              {errors.email && (
+                <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+              )}
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Address*
+              Street Address
             </label>
             <input
               type="text"
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+              className={inputClass(!!errors.address)}
               value={address}
-              onChange={(e) => setAddress(e.target.value)}
+              onChange={(e) => {
+                setAddress(e.target.value);
+                if (errors.address) setErrors({ ...errors, address: undefined });
+              }}
+              placeholder="123 Main St"
             />
+            {errors.address && (
+              <p className="mt-1 text-xs text-red-600">{errors.address}</p>
+            )}
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                City*
+                City
               </label>
               <input
                 type="text"
-                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                className={inputClass(!!errors.city)}
                 value={city}
-                onChange={(e) => setCity(e.target.value)}
+                onChange={(e) => {
+                  setCity(e.target.value);
+                  if (errors.city) setErrors({ ...errors, city: undefined });
+                }}
+                placeholder="Omaha"
               />
+              {errors.city && (
+                <p className="mt-1 text-xs text-red-600">{errors.city}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                State (abbr)*
+                State
               </label>
-              <input
-                type="text"
-                maxLength={2}
-                placeholder="NE"
-                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm uppercase shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+              <select
+                className={inputClass(!!errors.stateAbbr)}
                 value={stateAbbr}
-                onChange={(e) => setStateAbbr(e.target.value.toUpperCase())}
-              />
+                onChange={(e) => {
+                  setStateAbbr(e.target.value);
+                  if (errors.stateAbbr)
+                    setErrors({ ...errors, stateAbbr: undefined });
+                }}
+              >
+                <option value="">Select state</option>
+                {US_STATES.map((s) => (
+                  <option key={s.abbr} value={s.abbr}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+              {errors.stateAbbr && (
+                <p className="mt-1 text-xs text-red-600">{errors.stateAbbr}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Zip*
+                Zip
               </label>
               <input
                 type="text"
-                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                className={inputClass(!!errors.zip)}
                 value={zip}
-                onChange={(e) => setZip(e.target.value)}
+                onChange={(e) => {
+                  setZip(e.target.value);
+                  if (errors.zip) setErrors({ ...errors, zip: undefined });
+                }}
+                placeholder="68101"
+                maxLength={10}
               />
+              {errors.zip && (
+                <p className="mt-1 text-xs text-red-600">{errors.zip}</p>
+              )}
             </div>
           </div>
-          <button
-            onClick={handleNext}
-            className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600"
-          >
-            Next
-          </button>
-        </div>
-      )}
-
-      {/* STEP 2 */}
-      {step === 2 && (
-        <div className="space-y-6">
-          <p className="text-base text-gray-600">
-            We’ll look up your representatives by State and Zip. Click “Fetch
-            Reps” if you haven’t already. Then pick who you want to contact.
-          </p>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleFetchReps}
-              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600"
-              disabled={isFetching}
-            >
-              {isFetching ? "Fetching..." : "Fetch Reps"}
-            </button>
-            {representatives.length > 0 && (
-              <span className="text-sm text-gray-500">
-                Found {representatives.length} rep(s)
-              </span>
-            )}
-          </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {representatives.map((rep) => {
-              const isSelected = !!selectedReps.find(
-                (r) => r.memberId === rep.memberId,
-              );
-              return (
-                <label
-                  key={rep.memberId}
-                  className={`flex cursor-pointer items-center rounded border p-2 ${
-                    isSelected
-                      ? "border-indigo-600 bg-indigo-50"
-                      : "border-gray-200 bg-white"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    className="mr-2 h-4 w-4 accent-indigo-600"
-                    checked={isSelected}
-                    onChange={() => handleToggleRep(rep)}
-                  />
-                  <span className="text-sm text-gray-800">
-                    {rep.name}
-                    {rep.party ? ` (${rep.party})` : ""}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-          <div className="flex items-center justify-between pt-4">
-            <button
-              onClick={handleBack}
-              className="rounded-md bg-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
-            >
-              Back
-            </button>
+          <div className="flex justify-end pt-2">
             <button
               onClick={handleNext}
-              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+              className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-colors"
             >
               Next
             </button>
@@ -456,15 +566,95 @@ ${userName}
         </div>
       )}
 
-      {/* STEP 3 */}
-      {step === 3 && (
-        <form onSubmit={handleSubmit} className="space-y-6">
+      {/* STEP 2: Select Reps */}
+      {step === 2 && (
+        <div className="space-y-5">
           <p className="text-base text-gray-600">
-            Compose your message below. Optionally select a message template and
-            add a personal note.
+            Fetch your representatives, then select who you want to contact.
+          </p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleFetchReps}
+              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 disabled:opacity-50 transition-colors"
+              disabled={isFetching}
+            >
+              {isFetching ? "Fetching..." : "Fetch Reps"}
+            </button>
+            {representatives.length > 0 && (
+              <span className="text-sm text-gray-500">
+                Found {representatives.length} representative(s)
+              </span>
+            )}
+          </div>
+
+          {fetchError && (
+            <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+              {fetchError}
+            </div>
+          )}
+
+          {representatives.length > 0 && (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {representatives.map((rep) => {
+                const isSelected = !!selectedReps.find(
+                  (r) => r.memberId === rep.memberId,
+                );
+                return (
+                  <label
+                    key={rep.memberId}
+                    className={`flex cursor-pointer items-center rounded-lg border p-3 transition-colors ${
+                      isSelected
+                        ? "border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600"
+                        : "border-gray-200 bg-white hover:border-gray-300"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="mr-3 h-4 w-4 accent-indigo-600"
+                      checked={isSelected}
+                      onChange={() => handleToggleRep(rep)}
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-800">
+                        {normalizeName(rep.name)}
+                      </span>
+                      {rep.party && (
+                        <span className="ml-2 text-xs text-gray-500">
+                          ({rep.party})
+                        </span>
+                      )}
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between pt-4">
+            <button
+              onClick={handleBack}
+              className="rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-colors"
+            >
+              Back
+            </button>
+            <button
+              onClick={handleNext}
+              className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 3: Compose Message */}
+      {step === 3 && (
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <p className="text-base text-gray-600">
+            Select a message template or write your own. Add a personal note if
+            you want.
           </p>
 
-          {/* Message Template Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Message Template
@@ -476,17 +666,21 @@ ${userName}
                 setTemplate(e.target.value);
                 if (e.target.value === "pancan") {
                   setSubject("Pancreatic Cancer Awareness Request");
+                } else if (e.target.value === "native-education") {
+                  setSubject("The Issue of Native American Education");
                 } else {
                   setSubject("");
                 }
               }}
             >
-              <option value="">-- Select a template --</option>
+              <option value="">-- No template (write your own) --</option>
               <option value="pancan">Pancreatic Cancer Awareness</option>
+              <option value="native-education">
+                Native American Education
+              </option>
             </select>
           </div>
 
-          {/* Subject (may be dynamically set by the template) */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Subject
@@ -496,14 +690,13 @@ ${userName}
               className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="Optional subject override"
+              placeholder="Subject line for your message"
             />
           </div>
 
-          {/* Personalized Message (Optional) */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Personalized Message (Optional)
+              Personal Message (Optional)
             </label>
             <textarea
               rows={4}
@@ -514,15 +707,20 @@ ${userName}
             />
           </div>
 
-          {/* Live Message Preview (only if user picked "pancan") */}
-          {template === "pancan" && (
+          {(template === "pancan" || template === "native-education") && (
             <div>
-              <h4 className="my-2 text-sm font-semibold text-gray-700">
+              <h4 className="mb-2 text-sm font-semibold text-gray-700">
                 Message Preview
               </h4>
-              <pre className="max-h-96 overflow-auto rounded-md border border-gray-300 bg-white p-4 text-sm whitespace-pre-wrap">
+              <pre className="max-h-96 overflow-auto rounded-lg border border-gray-200 bg-white p-4 text-sm leading-relaxed whitespace-pre-wrap">
                 {buildTemplatePreview()}
               </pre>
+            </div>
+          )}
+
+          {fetchError && (
+            <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+              {fetchError}
             </div>
           )}
 
@@ -530,13 +728,13 @@ ${userName}
             <button
               type="button"
               onClick={handleBack}
-              className="rounded-md bg-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+              className="rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-colors"
             >
               Back
             </button>
             <button
               type="submit"
-              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+              className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-colors"
             >
               Submit
             </button>
@@ -544,38 +742,40 @@ ${userName}
         </form>
       )}
 
-      {/* STEP 4 */}
+      {/* STEP 4: Confirmation */}
       {step === 4 && (
         <div className="space-y-6">
           {submissionStatus?.success ? (
-            <div className="rounded-md bg-green-50 p-4 text-green-700">
-              <p className="font-semibold">Success!</p>
-              <p>{submissionStatus.details}</p>
+            <div className="rounded-lg bg-green-50 p-5 ring-1 ring-green-200">
+              <div className="flex items-center gap-2 mb-2">
+                <svg
+                  className="h-5 w-5 text-green-600"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <p className="font-semibold text-green-800">Success</p>
+              </div>
+              <p className="text-sm text-green-700">
+                {submissionStatus.details}
+              </p>
             </div>
           ) : (
-            <div className="rounded-md bg-red-50 p-4 text-red-700">
-              <p className="font-semibold">Error</p>
-              <p>{submissionStatus?.details}</p>
+            <div className="rounded-lg bg-red-50 p-5 ring-1 ring-red-200">
+              <p className="font-semibold text-red-800">Error</p>
+              <p className="text-sm text-red-700">
+                {submissionStatus?.details}
+              </p>
             </div>
           )}
           <button
-            onClick={() => {
-              // Reset everything if they want to do another submission
-              setStep(1);
-              setSubmissionStatus(null);
-              setName("");
-              setEmail("");
-              setAddress("");
-              setCity("");
-              setStateAbbr("");
-              setZip("");
-              setRepresentatives([]);
-              setSelectedReps([]);
-              setTemplate("");
-              setSubject("");
-              setPersonalizedMessage("");
-            }}
-            className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+            onClick={resetForm}
+            className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-colors"
           >
             Start Over
           </button>

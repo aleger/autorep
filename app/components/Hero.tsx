@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function Hero() {
   return (
     <div className="relative isolate px-6 pt-14 lg:px-8">
@@ -19,14 +17,6 @@ export default function Hero() {
         />
       </div>
       <div className="mx-auto max-w-2xl pt-32 pb-12">
-        <div className="hidden sm:mb-8 sm:flex sm:justify-center">
-          <div className="relative rounded-full px-3 py-1 text-sm/6 text-gray-600 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
-            Created for college research purposes only.{" "}
-            {/*            <a href="#" className="font-semibold text-indigo-600">
-              Learn more <span aria-hidden="true">&rarr;</span>
-            </a>*/}
-          </div>
-        </div>
         <div className="text-center">
           <h1
             className="text-5xl font-semibold tracking-tight text-balance
@@ -41,6 +31,14 @@ export default function Hero() {
             AutoRep uses publicly available data to connect you with your
             representatives in Congress quickly and with minimal effort.
           </p>
+          <div className="mt-10 flex items-center justify-center gap-x-6">
+            <a
+              href="#multi-step-form"
+              className="rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-colors"
+            >
+              Contact Your Rep
+            </a>
+          </div>
         </div>
       </div>
       <div
